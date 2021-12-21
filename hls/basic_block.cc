@@ -6,40 +6,51 @@
 
 typedef struct {
   bool skip_conv;
-  ap_uint<BIT_WIDTH> *weights1;
-  ap_uint<BIT_WIDTH> *weights2;
-  ap_uint<BIT_WIDTH> *weights_skip;
-  float scale1;
+  ap_uint<BIT_WIDTH> *bb_conv_bn_weight;
+  ap_uint<BIT_WIDTH> *bb_conv_weight;
+  ap_uint<BIT_WIDTH> *bb_skip_conv_bn_weight;
+  //float scale1;
   float scale2;
-  float *bn_weight1;
-  float *bn_alpha1;
-  float *bn_weight_skip;
-  float *bn_alpha_skip; 
+
+  float *bb_bn_alpha;
+  float *bb_bn_beta;
+  float *bb_skip_conv_bn_alpha;
+  float *bb_skip_conv_bn_beta; 
+
   uint16_t IH;
   uint16_t IW;
   uint16_t IC;
-  uint16_t OH1;
-  uint16_t OW1;
-  uint16_t OC1;
-  uint16_t OH2;
-  uint16_t OW2;
-  uint16_t OC2;
-  uint8_t KH1;
-  uint8_t KW1;
-  uint8_t KH2;
-  uint8_t KW2;
-  uint8_t KH_SKIP;
-  uint8_t KW_SKIP;
-  uint8_t padding1;
-  uint8_t padding2;
+
+  uint16_t OH1; // 3
+  uint16_t OW1; // 3
+  uint16_t OC1; // 3
+  uint16_t OH2; // 6
+  uint16_t OW2; // 6
+  uint16_t OC2; // 6
+  //uint8_t KH1;  
+  //uint8_t KW1;
+  //uint8_t KH2;
+  //uint8_t KW2;
+  //uint8_t KH_SKIP;
+  //uint8_t KW_SKIP;
+  uint8_t padding1; // 3
+  uint8_t padding2; // 6
   uint8_t padding_skip;
-  uint8_t stride1;
-  uint8_t stride2;
-  uint8_t stride_skip;
+  uint8_t stride1;  // 3
+  uint8_t stride2; // 6
+  uint8_t stride_skip;  
 } Info;
 
 #define MAX_INUT_SIZE 80*32*32
 #define TILE_SIZE 320
+
+#define SKIP_CONV_BN_KERNEL_SIZE 1
+#define OTHER_KERNEL_SIZE 3
+
+#define SKIP_CONV_BN_STRIDE 2
+#define SKIP_CONV_BN_PADDING 0
+
+#define ALL_PADDING 1
 
 void basic_block(Info info, float *input_activation, float *output_activatoin) {
 
@@ -63,7 +74,7 @@ void basic_block(Info info, float *input_activation, float *output_activatoin) {
         if(ih >= 0 && info.IW >= 0 && ih < info.IH && info.IW < info.IW){
           conv1: for(int oc = 0; oc < info.OC1; oc++) {
               for(int info.IC = 0; info.IC < info.IC ; info.IC++) {
-                if(info.weights1[kh * KW * info.OC1 * info.IC + kw * info.OC1 * info.IC + oc * info.IC + (info.IC/32)][31 - (info.IC%32)]) {
+                if(info.bb_conv_bn_weight[kh * KW * info.OC1 * info.IC + kw * info.OC1 * info.IC + oc * info.IC + (info.IC/32)][31 - (info.IC%32)]) {
                   // output1_activatoin[oh * info.OW1 * info.OC1 + ow * info.OC1 + oc] += temp_activation[ih * info.IW * info.IC * info.IW * info.IC + info.IC];
                   output_tile_oc[oc] += temp_activation[ih * info.IW * info.IC * info.IW * info.IC + info.IC];
                 }
@@ -95,7 +106,7 @@ void basic_block(Info info, float *input_activation, float *output_activatoin) {
           if(ih >= 0 && info.IW >= 0 && ih < IH && info.IW < info.IW){
             conv_skip: for(int oc = 0; oc < info.OC2; oc++) {
                 for(int info.IC = 0; info.IC < info.IC ; info.IC++) {
-                  if(info.weights_skip[kh * KW * info.OC2 * info.IC + kw * info.OC2 * info.IC + oc * info.IC + (info.IC/32)][31 - (info.IC%32)]) {
+                  if(info.bb_skip_conv_bn_weight[kh * KW * info.OC2 * info.IC + kw * info.OC2 * info.IC + oc * info.IC + (info.IC/32)][31 - (info.IC%32)]) {
                     // output_activation[oh * info.OW2 * info.OC2 + ow * info.OC2 + oc] += temp_activation[ih * info.IW * info.IC * info.IW * info.IC + info.IC];
                     output_tile_oc[oc] += temp_activation[ih * info.IW * info.IC * info.IW * info.IC + info.IC];
 
@@ -130,7 +141,7 @@ void basic_block(Info info, float *input_activation, float *output_activatoin) {
           if(ih >= 0 && info.IW >= 0 && ih < OH1 && info.IW < info.OW1){
             conv2: for(int oc = 0; oc < info.OC2; oc++) {
               for(int info.IC = 0; info.IC < info.OC1 ; info.IC++) {
-                if(info.weights2[kh * KW * info.OC2 * info.OC1 + kw * info.OC2 * info.OC1 + oc * info.OC1 + (info.IC/32)][31 - (info.IC%32)]) {
+                if(info.bb_conv_weight[kh * KW * info.OC2 * info.OC1 + kw * info.OC2 * info.OC1 + oc * info.OC1 + (info.IC/32)][31 - (info.IC%32)]) {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * info.OW1 * info.OC1 * info.IW * info.OC1 + info.IC];
                 }
                 else {
