@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 #include "run.h"
-#include "conv.h"
+#include "basicblock.h"
 
 void run(
   // Input to basic block 0
@@ -117,18 +117,18 @@ void run(
 	w_offset_0 += ((i != 0) ? weightSize[i - 1].skip_conv_bn : 0);
 	w_offset_1 += ((i != 0) ? weightSize[i - 1].conv_bn: 0);
 	w_offset_2 += ((i != 0) ? weightSize[i - 1].conv : 0);
-	conv(bb_bn_alpha_beta + bn_offset_0,
-       bb_skip_conv_bn_alpha_beta + bn_offset_1,
-       bb_conv_bn_alpha_beta + bn_offset_2,
-       bb_skip_conv_bn_weight + w_offset_0,
-       bb_conv_bn_weight + w_offset_1,
-       bb_conv_weight + w_offset_2,
-       bbShapes[i].skip_conv_bn_stride[0], bbShapes[i].skip_conv_bn_stride[1],
-       bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-       bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1],
-       bbShapes[i].skip_conv_bn_padding[0], bbShapes[i].skip_conv_bn_padding[i],
-       bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-       bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1]);
+	basicblock(bb_bn_alpha_beta + bn_offset_0,
+             bb_skip_conv_bn_alpha_beta + bn_offset_1,
+             bb_conv_bn_alpha_beta + bn_offset_2,
+             bb_skip_conv_bn_weight + w_offset_0,
+             bb_conv_bn_weight + w_offset_1,
+             bb_conv_weight + w_offset_2,
+             bbShapes[i].skip_conv_bn_stride[0], bbShapes[i].skip_conv_bn_stride[1],
+             bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
+             bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1],
+             bbShapes[i].skip_conv_bn_padding[0], bbShapes[i].skip_conv_bn_padding[i],
+             bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
+             bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1]);
   }
   // Init weights for layer 3, 4
   init_bb(bb_bn_alpha_beta,
@@ -148,18 +148,18 @@ void run(
   	w_offset_0 += ((i != 0) ? weightSize[i - 1 + 3].skip_conv_bn : 0);
   	w_offset_1 += ((i != 0) ? weightSize[i - 1 + 3].conv_bn: 0);
   	w_offset_2 += ((i != 0) ? weightSize[i - 1 + 3].conv : 0);
-  	conv(bb_bn_alpha_beta + bn_offset_0,
-         bb_skip_conv_bn_alpha_beta + bn_offset_1,
-         bb_conv_bn_alpha_beta + bn_offset_2,
-         bb_skip_conv_bn_weight + w_offset_0,
-         bb_conv_bn_weight + w_offset_1,
-         bb_conv_weight + w_offset_2,
-		 bbShapes[i + 3].skip_conv_bn_stride[0], bbShapes[i + 3].skip_conv_bn_stride[1],
-		 bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
-		 bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1],
-		 bbShapes[i + 3].skip_conv_bn_padding[0], bbShapes[i + 3].skip_conv_bn_padding[1],
-		 bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
-		 bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1]);
+  	basicblock(bb_bn_alpha_beta + bn_offset_0,
+               bb_skip_conv_bn_alpha_beta + bn_offset_1,
+               bb_conv_bn_alpha_beta + bn_offset_2,
+               bb_skip_conv_bn_weight + w_offset_0,
+               bb_conv_bn_weight + w_offset_1,
+               bb_conv_weight + w_offset_2,
+               bbShapes[i + 3].skip_conv_bn_stride[0], bbShapes[i + 3].skip_conv_bn_stride[1],
+               bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
+               bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1],
+               bbShapes[i + 3].skip_conv_bn_padding[0], bbShapes[i + 3].skip_conv_bn_padding[1],
+               bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
+               bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1]);
     }
   // TODO: need to implement outer bn and fc
   //init_outer(outer_bn, outer_fc_weight, outer_fc_bias);
