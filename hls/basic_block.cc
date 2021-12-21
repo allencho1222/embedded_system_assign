@@ -36,12 +36,12 @@ typedef struct {
   uint8_t stride1;
   uint8_t stride2;
   uint8_t stride_skip;
-} Basinfo.ICblockInfo;
+} Info;
 
 #define MAX_INUT_SIZE 80*32*32
 #define TILE_SIZE 320
 
-void basinfo.IC_block(Basinfo.ICblockInfo info, float *input_activation, float *output_activatoin) {
+void basic_block(Info info, float *input_activation, float *output_activatoin) {
 
   ap_uint<1> temp_acgivation [MAX_INPUT_SIZE];
   ap_uint<2> temp_output1_acgivation [MAX_INPUT_SIZE];
