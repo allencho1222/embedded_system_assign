@@ -61,13 +61,13 @@ void run(
 
   // To calculate the maximum array size of BN parameters
   const int BB_BN_ALPHA_BETA_LEN =
-	MAX(bnSize[0].bn + bnSize[1].bn + bnSize[2].bn, \
-      bnSize[3].bn + bnSize[4].bn);
+    MAX(bnSize[0].bn + bnSize[1].bn + bnSize[2].bn, \
+        bnSize[3].bn + bnSize[4].bn);
   const int BB_SKIP_CONV_BN_ALPHA_BETA_LEN =
-  	MAX(bnSize[0].skip_conv_bn + bnSize[1].skip_conv_bn + bnSize[2].skip_conv_bn, \
+    MAX(bnSize[0].skip_conv_bn + bnSize[1].skip_conv_bn + bnSize[2].skip_conv_bn, \
         bnSize[3].skip_conv_bn + bnSize[4].skip_conv_bn);
   const int BB_CONV_BN_ALPHA_BETA_LEN =
-  	MAX(bnSize[0].conv_bn + bnSize[1].conv_bn + bnSize[2].conv_bn, \
+    MAX(bnSize[0].conv_bn + bnSize[1].conv_bn + bnSize[2].conv_bn, \
         bnSize[3].conv_bn + bnSize[4].conv_bn);
 
   // BatchNorm buffers
@@ -77,14 +77,14 @@ void run(
 
   // To calculate the maximum array size of conv weight
   const int BB_SKIP_CONV_BN_WEIGHT_LEN =
-  	MAX(weightSize[0].skip_conv_bn + weightSize[1].skip_conv_bn +weightSize[2].skip_conv_bn, \
-  		  weightSize[3].skip_conv_bn + weightSize[4].skip_conv_bn);
+    MAX(weightSize[0].skip_conv_bn + weightSize[1].skip_conv_bn +weightSize[2].skip_conv_bn, \
+        weightSize[3].skip_conv_bn + weightSize[4].skip_conv_bn);
   const int BB_CONV_BN_WEIGHT_LEN =
-  	MAX(weightSize[0].conv_bn + weightSize[1].conv_bn + weightSize[2].conv_bn, \
-  	    weightSize[3].conv_bn + weightSize[4].conv_bn);
+    MAX(weightSize[0].conv_bn + weightSize[1].conv_bn + weightSize[2].conv_bn, \
+        weightSize[3].conv_bn + weightSize[4].conv_bn);
   const int BB_CONV_WEIGHT_LEN =
-  	MAX(weightSize[0].conv + weightSize[1].conv + weightSize[2].conv, \
-  	    weightSize[3].conv + weightSize[4].conv);
+    MAX(weightSize[0].conv + weightSize[1].conv + weightSize[2].conv, \
+        weightSize[3].conv + weightSize[4].conv);
 
   // Conv weight buffers
   WEIGHT_T bb_skip_conv_bn_weight[BB_SKIP_CONV_BN_WEIGHT_LEN];
@@ -111,24 +111,24 @@ void run(
   int w_offset_2 = 0;
   // Run conv
   for (int i = 0; i < 3; ++i) {
-	bn_offset_0 += ((i != 0) ? bnSize[i - 1].bn : 0);
-	bn_offset_1 += ((i != 0) ? bnSize[i - 1].skip_conv_bn : 0);
-	bn_offset_2 += ((i != 0) ? bnSize[i - 1].conv_bn : 0);
-	w_offset_0 += ((i != 0) ? weightSize[i - 1].skip_conv_bn : 0);
-	w_offset_1 += ((i != 0) ? weightSize[i - 1].conv_bn: 0);
-	w_offset_2 += ((i != 0) ? weightSize[i - 1].conv : 0);
-	basicblock(bb_bn_alpha_beta + bn_offset_0,
-             bb_skip_conv_bn_alpha_beta + bn_offset_1,
-             bb_conv_bn_alpha_beta + bn_offset_2,
-             bb_skip_conv_bn_weight + w_offset_0,
-             bb_conv_bn_weight + w_offset_1,
-             bb_conv_weight + w_offset_2,
-             bbShapes[i].skip_conv_bn_stride[0], bbShapes[i].skip_conv_bn_stride[1],
-             bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-             bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1],
-             bbShapes[i].skip_conv_bn_padding[0], bbShapes[i].skip_conv_bn_padding[i],
-             bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-             bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1]);
+    bn_offset_0 += ((i != 0) ? bnSize[i - 1].bn : 0);
+    bn_offset_1 += ((i != 0) ? bnSize[i - 1].skip_conv_bn : 0);
+    bn_offset_2 += ((i != 0) ? bnSize[i - 1].conv_bn : 0);
+    w_offset_0 += ((i != 0) ? weightSize[i - 1].skip_conv_bn : 0);
+    w_offset_1 += ((i != 0) ? weightSize[i - 1].conv_bn: 0);
+    w_offset_2 += ((i != 0) ? weightSize[i - 1].conv : 0);
+    basicblock(bb_bn_alpha_beta + bn_offset_0,
+               bb_skip_conv_bn_alpha_beta + bn_offset_1,
+               bb_conv_bn_alpha_beta + bn_offset_2,
+               bb_skip_conv_bn_weight + w_offset_0,
+               bb_conv_bn_weight + w_offset_1,
+               bb_conv_weight + w_offset_2,
+               bbShapes[i].skip_conv_bn_stride[0], bbShapes[i].skip_conv_bn_stride[1],
+               bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
+               bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1],
+               bbShapes[i].skip_conv_bn_padding[0], bbShapes[i].skip_conv_bn_padding[i],
+               bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
+               bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1]);
   }
   // Init weights for layer 3, 4
   init_bb(bb_bn_alpha_beta,
