@@ -142,13 +142,12 @@ void run(
           nullptr, nullptr);
   // Run conv
   for (int i = 0; i < 2; ++i) {
-  	bn_offset_0 += ((i != 0) ? bnSize[i - 1 + 3].bn : 0);
-  	bn_offset_1 += ((i != 0) ? bnSize[i - 1 + 3].skip_conv_bn : 0);
-  	bn_offset_2 += ((i != 0) ? bnSize[i - 1 + 3].conv_bn : 0);
-  	w_offset_0 += ((i != 0) ? weightSize[i - 1 + 3].skip_conv_bn : 0);
-  	w_offset_1 += ((i != 0) ? weightSize[i - 1 + 3].conv_bn: 0);
-  	w_offset_2 += ((i != 0) ? weightSize[i - 1 + 3].conv : 0);
-  	basicblock(bb_bn_alpha_beta + bn_offset_0,
+    bn_offset_0 += ((i != 0) ? bnSize[i - 1 + 3].bn : 0); bn_offset_1 += ((i != 0) ? bnSize[i - 1 + 3].skip_conv_bn : 0);
+    bn_offset_2 += ((i != 0) ? bnSize[i - 1 + 3].conv_bn : 0);
+    w_offset_0 += ((i != 0) ? weightSize[i - 1 + 3].skip_conv_bn : 0);
+    w_offset_1 += ((i != 0) ? weightSize[i - 1 + 3].conv_bn: 0);
+    w_offset_2 += ((i != 0) ? weightSize[i - 1 + 3].conv : 0);
+    basicblock(bb_bn_alpha_beta + bn_offset_0,
                bb_skip_conv_bn_alpha_beta + bn_offset_1,
                bb_conv_bn_alpha_beta + bn_offset_2,
                bb_skip_conv_bn_weight + w_offset_0,
