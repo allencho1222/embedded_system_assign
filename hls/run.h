@@ -2,8 +2,6 @@
 #define _RUN_H
 
 #include "buffer.h"
-#include "model_shape.h"
-#include "model_param.h"
 
 void run(
   // Input to basic block 0
@@ -25,4 +23,16 @@ void run(
   void* outer_bn,
   void* outer_fc_weight, void* outer_fc_bias);
 
+void init_bb(float* bb_bn_alpha_beta,
+             float* bb_skip_conv_bn_alpha_beta,
+             float* bb_conv_bn_alpha_beta,
+             WEIGHT_T* bb_skip_conv_bn_weight,
+             WEIGHT_T* bb_conv_bn_weight,
+             WEIGHT_T* bb_conv_weight,
+             float* bb_0_bn, WEIGHT_T* bb_0_weight,
+             float* bb_1_bn, WEIGHT_T* bb_1_weight,
+             float* bb_2_bn, WEIGHT_T* bb_2_weight);
+
+
 #endif
+
