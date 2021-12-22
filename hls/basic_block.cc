@@ -22,7 +22,7 @@
 #define B2_OH2 16
 #define B2_OW2 16
 #define B2_OC2 160
-#define B2_SCALE 
+#define B2_SCALE
 #define B2_STRIDE1 2
 #define B2_STRIDE2 1
 
@@ -61,23 +61,21 @@
 #define B5_STRIDE 1
 #define IMAGES 10
 
-
-
 void conv_b1(
-  WEIGHT_T *bb_conv_bn_weight,
-  WEIGHT_T *bb_conv_weight,
-  WEIGHT_T *bb_skip_conv_bn_weight,
-  float *bb_bn_alpha,
-  float *bb_bn_beta,
-  float *bb_skip_conv_bn_alpha,
-  float *bb_skip_conv_bn_beta,
-  float *bb_conv_bn_alpha,
-  float *bb_conv_bn_beta,
-  float *input_activation, float *output_activatoin)
+    WEIGHT_T *bb_conv_bn_weight,
+    WEIGHT_T *bb_conv_weight,
+    WEIGHT_T *bb_skip_conv_bn_weight,
+    float *bb_bn_alpha,
+    float *bb_bn_beta,
+    float *bb_skip_conv_bn_alpha,
+    float *bb_skip_conv_bn_beta,
+    float *bb_conv_bn_alpha,
+    float *bb_conv_bn_beta,
+    float *input_activation, float *output_activatoin)
 {
 
-  int temp_activation[B1_IH*B1_IW*B1_IC];
-  int temp_output1_acgivation[B1_IH*B1_IW*B1_IC];
+  int temp_activation[B1_IH * B1_IW * B1_IC];
+  int temp_output1_acgivation[B1_IH * B1_IW * B1_IC];
   float output_tile_oc[B1_OC1] = {0};
 
 bn_relu0:
@@ -105,8 +103,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B1_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B1_OC1 * B1_IC / AP_SIZE) 
-                  + (kw * B1_OC1 * B1_IC / AP_SIZE) + (oc * B1_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B1_OC1 * B1_IC / AP_SIZE) + (kw * B1_OC1 * B1_IC / AP_SIZE) + (oc * B1_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B1_IW * B1_IC + iw * B1_IC + ic];
                 }
@@ -122,8 +119,7 @@ bn_relu0:
     bn_relu1:
       for (int oc = 0; oc < B1_OC1; oc++)
       {
-        temp_output1_acgivation[oh * B1_OW1 * B1_OC1 + ow * B1_OC1 + oc] 
-          = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
+        temp_output1_acgivation[oh * B1_OW1 * B1_OC1 + ow * B1_OC1 + oc] = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -145,9 +141,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B1_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B1_OC2 * B1_OC1 / AP_SIZE) 
-                  + (kw * B1_OC2 * B1_OC1 / AP_SIZE) + (oc * B1_OC1 / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B1_OC2 * B1_OC1 / AP_SIZE) + (kw * B1_OC2 * B1_OC1 / AP_SIZE) + (oc * B1_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B1_OW1 * B1_OC1 + iw * B1_OC1 + ic];
                 }
@@ -162,8 +156,7 @@ bn_relu0:
       }   // loop  for KH
       for (int oc = 0; oc < B1_OC2; oc++)
       {
-        output_activatoin[oh * B1_OW2 * B1_OC2 + ow * B1_OC2 + oc] 
-          = output_tile_oc[oc] * B1_SCALE + input_activation[oh * B1_OW2 * B1_OC2 + ow * B1_OC2 + oc];
+        output_activatoin[oh * B1_OW2 * B1_OC2 + ow * B1_OC2 + oc] = output_tile_oc[oc] * B1_SCALE + input_activation[oh * B1_OW2 * B1_OC2 + ow * B1_OC2 + oc];
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -171,21 +164,21 @@ bn_relu0:
 }
 
 void conv_b2(
-  WEIGHT_T *bb_conv_bn_weight,
-  WEIGHT_T *bb_conv_weight,
-  WEIGHT_T *bb_skip_conv_bn_weight,
-  float scale2,
-  float *bb_bn_alpha,
-  float *bb_bn_beta,
-  float *bb_skip_conv_bn_alpha,
-  float *bb_skip_conv_bn_beta,
-  float *bb_conv_bn_alpha,
-  float *bb_conv_bn_beta,
-  float *input_activation, float *output_activatoin)
+    WEIGHT_T *bb_conv_bn_weight,
+    WEIGHT_T *bb_conv_weight,
+    WEIGHT_T *bb_skip_conv_bn_weight,
+    float scale2,
+    float *bb_bn_alpha,
+    float *bb_bn_beta,
+    float *bb_skip_conv_bn_alpha,
+    float *bb_skip_conv_bn_beta,
+    float *bb_conv_bn_alpha,
+    float *bb_conv_bn_beta,
+    float *input_activation, float *output_activatoin)
 {
 
-  int temp_activation[B2_IH*B2_IW*B2_IC];
-  int temp_output1_acgivation[B2_IH*B2_IW*B2_IC];
+  int temp_activation[B2_IH * B2_IW * B2_IC];
+  int temp_output1_acgivation[B2_IH * B2_IW * B2_IC];
   float output_tile_oc[B2_OC2] = {0};
 
 bn_relu0:
@@ -214,9 +207,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B2_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B2_OC1 * B2_IC / AP_SIZE) 
-                  + (kw * B2_OC1 * B2_IC / AP_SIZE) + (oc * B2_IC / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B2_OC1 * B2_IC / AP_SIZE) + (kw * B2_OC1 * B2_IC / AP_SIZE) + (oc * B2_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B2_IW * B2_IC + iw * B2_IC + ic];
                 }
@@ -232,8 +223,7 @@ bn_relu0:
     bn_relu1:
       for (int oc = 0; oc < B2_OC1; oc++)
       {
-        temp_output1_acgivation[oh * B2_OW1 * B2_OC1 + ow * B2_OC1 + oc] 
-          = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
+        temp_output1_acgivation[oh * B2_OW1 * B2_OC1 + ow * B2_OC1 + oc] = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -255,9 +245,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B2_IC; ic++)
               {
-                if (bb_skip_conv_bn_weight[(kh * SKIP_CONV_BN_KERNEL_SIZE * B2_OC2 * B2_IC / AP_SIZE) 
-                  + (kw * B2_OC2 * B2_IC / AP_SIZE) + (oc * B2_IC / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_skip_conv_bn_weight[(kh * SKIP_CONV_BN_KERNEL_SIZE * B2_OC2 * B2_IC / AP_SIZE) + (kw * B2_OC2 * B2_IC / AP_SIZE) + (oc * B2_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B2_IW * B2_IC + iw * B2_IC + ic];
                 }
@@ -273,8 +261,7 @@ bn_relu0:
     bn_skip:
       for (int oc = 0; oc < B2_OC2; oc++)
       { // Skip conv residual
-        output_activatoin[oh * B2_OW2 * B2_OC2 + ow * B2_OC2 + oc] 
-          = output_tile_oc[oc] * bb_skip_conv_bn_alpha[oc] + bb_skip_conv_bn_beta[oc];
+        output_activatoin[oh * B2_OW2 * B2_OC2 + ow * B2_OC2 + oc] = output_tile_oc[oc] * bb_skip_conv_bn_alpha[oc] + bb_skip_conv_bn_beta[oc];
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -296,9 +283,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B2_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B2_OC2 * B2_OC1 / AP_SIZE) 
-                  + (kw * B2_OC2 * B2_OC1 / AP_SIZE) + (oc * B2_OC1 / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B2_OC2 * B2_OC1 / AP_SIZE) + (kw * B2_OC2 * B2_OC1 / AP_SIZE) + (oc * B2_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B2_OW1 * B2_OC1 + iw * B2_OC1 + ic];
                 }
@@ -321,20 +306,20 @@ bn_relu0:
 }
 
 void conv_b3(
-  WEIGHT_T *bb_conv_bn_weight,
-  WEIGHT_T *bb_conv_weight,
-  WEIGHT_T *bb_skip_conv_bn_weight,
-  float *bb_bn_alpha,
-  float *bb_bn_beta,
-  float *bb_skip_conv_bn_alpha,
-  float *bb_skip_conv_bn_beta,
-  float *bb_conv_bn_alpha,
-  float *bb_conv_bn_beta,
-  float *input_activation, float *output_activatoin)
+    WEIGHT_T *bb_conv_bn_weight,
+    WEIGHT_T *bb_conv_weight,
+    WEIGHT_T *bb_skip_conv_bn_weight,
+    float *bb_bn_alpha,
+    float *bb_bn_beta,
+    float *bb_skip_conv_bn_alpha,
+    float *bb_skip_conv_bn_beta,
+    float *bb_conv_bn_alpha,
+    float *bb_conv_bn_beta,
+    float *input_activation, float *output_activatoin)
 {
 
-  int temp_activation[B3_IH*B3_IW*B3_IC];
-  int temp_output1_acgivation[B3_IH*B3_IW*B3_IC];
+  int temp_activation[B3_IH * B3_IW * B3_IC];
+  int temp_output1_acgivation[B3_IH * B3_IW * B3_IC];
   float output_tile_oc[B3_OC1] = {0};
 
 bn_relu0:
@@ -362,8 +347,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B3_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B3_OC1 * B3_IC / AP_SIZE) 
-                  + (kw * B3_OC1 * B3_IC / AP_SIZE) + (oc * B3_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B3_OC1 * B3_IC / AP_SIZE) + (kw * B3_OC1 * B3_IC / AP_SIZE) + (oc * B3_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B3_IW * B3_IC + iw * B3_IC + ic];
                 }
@@ -379,8 +363,7 @@ bn_relu0:
     bn_relu1:
       for (int oc = 0; oc < B3_OC1; oc++)
       {
-        temp_output1_acgivation[oh * B3_OW1 * B3_OC1 + ow * B3_OC1 + oc] 
-          = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
+        temp_output1_acgivation[oh * B3_OW1 * B3_OC1 + ow * B3_OC1 + oc] = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -402,9 +385,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B3_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B3_OC2 * B3_OC1 / AP_SIZE) 
-                  + (kw * B3_OC2 * B3_OC1 / AP_SIZE) + (oc * B3_OC1 / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B3_OC2 * B3_OC1 / AP_SIZE) + (kw * B3_OC2 * B3_OC1 / AP_SIZE) + (oc * B3_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B3_OW1 * B3_OC1 + iw * B3_OC1 + ic];
                 }
@@ -419,8 +400,7 @@ bn_relu0:
       }   // loop  for KH
       for (int oc = 0; oc < B3_OC2; oc++)
       {
-        output_activatoin[oh * B3_OW2 * B3_OC2 + ow * B3_OC2 + oc] 
-          = output_tile_oc[oc] * B3_SCALE + input_activation[oh * B3_OW2 * B3_OC2 + ow * B3_OC2 + oc];
+        output_activatoin[oh * B3_OW2 * B3_OC2 + ow * B3_OC2 + oc] = output_tile_oc[oc] * B3_SCALE + input_activation[oh * B3_OW2 * B3_OC2 + ow * B3_OC2 + oc];
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -428,21 +408,21 @@ bn_relu0:
 }
 
 void conv_b4(
-  WEIGHT_T *bb_conv_bn_weight,
-  WEIGHT_T *bb_conv_weight,
-  WEIGHT_T *bb_skip_conv_bn_weight,
-  float scale2,
-  float *bb_bn_alpha,
-  float *bb_bn_beta,
-  float *bb_skip_conv_bn_alpha,
-  float *bb_skip_conv_bn_beta,
-  float *bb_conv_bn_alpha,
-  float *bb_conv_bn_beta,
-  float *input_activation, float *output_activatoin)
+    WEIGHT_T *bb_conv_bn_weight,
+    WEIGHT_T *bb_conv_weight,
+    WEIGHT_T *bb_skip_conv_bn_weight,
+    float scale2,
+    float *bb_bn_alpha,
+    float *bb_bn_beta,
+    float *bb_skip_conv_bn_alpha,
+    float *bb_skip_conv_bn_beta,
+    float *bb_conv_bn_alpha,
+    float *bb_conv_bn_beta,
+    float *input_activation, float *output_activatoin)
 {
 
-  int temp_activation[B4_IH*B4_IW*B4_IC];
-  int temp_output1_acgivation[B4_IH*B4_IW*B4_IC];
+  int temp_activation[B4_IH * B4_IW * B4_IC];
+  int temp_output1_acgivation[B4_IH * B4_IW * B4_IC];
   float output_tile_oc[B4_OC2] = {0};
 
 bn_relu0:
@@ -471,9 +451,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B4_OC1 * B4_IC / AP_SIZE) 
-                  + (kw * B4_OC1 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B4_OC1 * B4_IC / AP_SIZE) + (kw * B4_OC1 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B4_IW * B4_IC + iw * B4_IC + ic];
                 }
@@ -489,8 +467,7 @@ bn_relu0:
     bn_relu1:
       for (int oc = 0; oc < B4_OC1; oc++)
       {
-        temp_output1_acgivation[oh * B4_OW1 * B4_OC1 + ow * B4_OC1 + oc] 
-          = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
+        temp_output1_acgivation[oh * B4_OW1 * B4_OC1 + ow * B4_OC1 + oc] = RELU(output_tile_oc[oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc]);
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -512,9 +489,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_IC; ic++)
               {
-                if (bb_skip_conv_bn_weight[(kh * SKIP_CONV_BN_KERNEL_SIZE * B4_OC2 * B4_IC / AP_SIZE) 
-                  + (kw * B4_OC2 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_skip_conv_bn_weight[(kh * SKIP_CONV_BN_KERNEL_SIZE * B4_OC2 * B4_IC / AP_SIZE) + (kw * B4_OC2 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B4_IW * B4_IC + iw * B4_IC + ic];
                 }
@@ -530,8 +505,7 @@ bn_relu0:
     bn_skip:
       for (int oc = 0; oc < B4_OC2; oc++)
       { // Skip conv residual
-        output_activatoin[oh * B4_OW2 * B4_OC2 + ow * B4_OC2 + oc] 
-          = output_tile_oc[oc] * bb_skip_conv_bn_alpha[oc] + bb_skip_conv_bn_beta[oc];
+        output_activatoin[oh * B4_OW2 * B4_OC2 + ow * B4_OC2 + oc] = output_tile_oc[oc] * bb_skip_conv_bn_alpha[oc] + bb_skip_conv_bn_beta[oc];
         output_tile_oc[oc] = 0; // reinitialzie to zero
       }
     } // loop for OW
@@ -553,9 +527,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B4_OC2 * B4_OC1 / AP_SIZE) 
-                  + (kw * B4_OC2 * B4_OC1 / AP_SIZE) + (oc * B4_OC1 / AP_SIZE) 
-                  + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B4_OC2 * B4_OC1 / AP_SIZE) + (kw * B4_OC2 * B4_OC1 / AP_SIZE) + (oc * B4_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B4_OW1 * B4_OC1 + iw * B4_OC1 + ic];
                 }
@@ -577,92 +549,90 @@ bn_relu0:
   }   // loop for OH
 }
 
-
 void last_block(
-  WEIGHT_T *bb_conv_weight, 
-  float *bb_conv_bn_alpha,
-  float *bb_conv_bn_beta, 
-  float *input_activation, 
-  float *output_activatoin)
+    WEIGHT_T *bb_conv_weight,
+    WEIGHT_T *bb_fc_weight,
+    float *bb_conv_bn_alpha,
+    float *bb_conv_bn_beta,
+    float *input_activation,
+    float *output_activatoin)
 {
 
- ap_uint<1> temp_acgivation[B5_IH * B5_IW * B5_IC];
- float output_tile_oc[B5_OH * B5_W * B5_OC] = {0};
+  ap_uint<1> temp_acgivation[B5_IH * B5_IW * B5_IC];
+  float output_tile_oc[B5_OH * B5_OW * B5_OC] = {0};
 
 bn_relu_last_block:
- for (int hw = 0; hw < B5_IH * B5_IW; hw++)
- {
-   for (int ic = 0; ic < B5_IC; ic++)
-   {
-     int input_value = input_activation[hw * B5_IC + ic];
-     temp_activation[hw * B5_IC + ic] = RELU(input_value * bn_weight1[ic] + bn_alpha[ic]);
-     output_tile_oc[hw * B5_IC + ic] = input_value;
-   }
- }
+  for (int hw = 0; hw < B5_IH * B5_IW; hw++)
+  {
+    for (int ic = 0; ic < B5_IC; ic++)
+    {
+      int input_value = input_activation[hw * B5_IC + ic];
+      temp_activation[hw * B5_IC + ic] = RELU(input_value * bn_weight1[ic] + bn_alpha[ic]);
+      output_tile_oc[hw * B5_IC + ic] = input_value;
+    }
+  }
 
 cont_last_block:
- for (int oh = 0; oh < B5_OH; oh++)
- {
-   for (int ow = 0; ow < B5_OW; ow++)
-   {
-     for (int kh = 0; kh < OTHER_KERNEL_SIZE; kh++)
-     {
-       for (int kw = 0; kw < OTHER_KERNEL_SIZE; kw++)
-       {
-         int ih = oh + kh - ALL_PADDING;
-         int iw = ow + kw - ALL_PADDING;
-         if (ih >= 0 && iw >= 0 && ih < B5_IH && iw < B5_IW)
-         {
-           for (int oc = 0; oc < B5_OC; oc++)
-           {
-             for (int ic = 0; ic < B5_IC; ic++)
-             {
-               if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B5_OC * B5_IC / AP_SIZE)
-                  + (kw * B5_OC * B5_IC / AP_SIZE) + (oc * 320 / AP_SIZE) 
+  for (int oh = 0; oh < B5_OH; oh++)
+  {
+    for (int ow = 0; ow < B5_OW; ow++)
+    {
+      for (int kh = 0; kh < OTHER_KERNEL_SIZE; kh++)
+      {
+        for (int kw = 0; kw < OTHER_KERNEL_SIZE; kw++)
+        {
+          int ih = oh + kh - ALL_PADDING;
+          int iw = ow + kw - ALL_PADDING;
+          if (ih >= 0 && iw >= 0 && ih < B5_IH && iw < B5_IW)
+          {
+            for (int oc = 0; oc < B5_OC; oc++)
+            {
+              for (int ic = 0; ic < B5_IC; ic++)
+              {
+                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B5_OC * B5_IC / AP_SIZE) 
+                  + (kw * B5_OC * B5_IC / AP_SIZE) + (oc * B5_IC / AP_SIZE) 
                   + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
-               {
-                 output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] += temp_activation[ih * B5_IW * B5_IC + iw * B5_IC + ic];
-               }
-               else
-               {
-                 output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] -= temp_activation[ih * B5_IW * B5_IC + iw * B5_IC + ic];
-               }
-             } // loop for IC
-           }   // loop for OC
-         }
-       } // loop for KW
-     }   // loop  for KH
-     for (int oc = 0; oc < B5_OC; oc++)
-     {
-       output_tile_oc[oc] += output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc];
-     }
-   } // loop for OW
- }   // loop for OH
- for (int oc = 0; oc < B5_OC; oc++)
- {
-   output_tile_oc[oc] /= (B5_OH * B5_OW);
- }
+                {
+                  output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] += temp_activation[ih * B5_IW * B5_IC + iw * B5_IC + ic];
+                }
+                else
+                {
+                  output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] -= temp_activation[ih * B5_IW * B5_IC + iw * B5_IC + ic];
+                }
+              } // loop for IC
+            }   // loop for OC
+          }
+        } // loop for KW
+      }   // loop  for KH
+      for (int oc = 0; oc < B5_OC; oc++)
+      {
+        output_tile_oc[oc] += output_tile_oc[oh * B5_OW * B5_OC + ow * B5_OC + oc] * bb_conv_bn_alpha[oc] + bb_conv_bn_beta[oc];
+      }
+    } // loop for OW
+  }   // loop for OH
+  for (int oc = 0; oc < B5_OC; oc++)
+  {
+    output_tile_oc[oc] /= (B5_OH * B5_OW);
+  }
 
 final_fc:
- for (int fc_out = 0; fc_out < IMAGES; fc_out++)
- {
-   float fc_result = 0;
-   for (int oc = 0; oc < B5_OC; oc++)
-   {
-     if (bb_conv_weight[(fc_out * B5_OC / AP_SIZE) + (oc / AP_SIZE)][(AP_SIZE - 1) - (oc % AP_SIZE)])
-     {
-       fc_result += output_tile_oc[oc];
-     }
-     else
-     {
-       fc_result -= output_tile_oc[oc];
-     }
-   }
-   output_activation[fc_out] = fc_result;
- }
+  for (int fc_out = 0; fc_out < IMAGES; fc_out++)
+  {
+    float fc_result = 0;
+    for (int oc = 0; oc < B5_OC; oc++)
+    {
+      if (bb_fc_weight[(fc_out * B5_OC / AP_SIZE) + (oc / AP_SIZE)][(AP_SIZE - 1) - (oc % AP_SIZE)])
+      {
+        fc_result += output_tile_oc[oc];
+      }
+      else
+      {
+        fc_result -= output_tile_oc[oc];
+      }
+    }
+    output_activation[fc_out] = fc_result;
+  }
 }
-
-
 
 // void conv(
 //   bool skip_conv,
