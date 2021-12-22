@@ -1,6 +1,27 @@
 #include "conv.h"
 
-void conv(Info info, float *input_activation, float *output_activatoin)
+void conv(
+  bool skip_conv,
+  ap_uint<AP_SIZE> *bb_conv_bn_weight,
+  ap_uint<AP_SIZE> *bb_conv_weight,
+  ap_uint<AP_SIZE> *bb_skip_conv_bn_weight,
+  float scale2,
+  float *bb_bn_alpha,
+  float *bb_bn_beta,
+  float *bb_skip_conv_bn_alpha,
+  float *bb_skip_conv_bn_beta;,
+  uint16_t IH,
+  uint16_t IW,
+  uint16_t IC,
+  uint16_t OH1, // 3
+  uint16_t OW1, // 3
+  uint16_t OC1, // 3
+  uint16_t OH2, // 6
+  uint16_t OW2, // 6
+  uint16_t OC2, // 6
+  uint8_t stride1,  // 3
+  uint8_t stride2, // 6
+  float *input_activation, float *output_activatoin)
 {
 
   int temp_activation[MAX_INPUT_SIZE];
