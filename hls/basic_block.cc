@@ -647,9 +647,9 @@ final_fc:
  for (int fc_out = 0; fc_out < IMAGES; fc_out++)
  {
    float fc_result = 0;
-   for (int oc = 0; oc < 320; oc++)
+   for (int oc = 0; oc < B5_OC; oc++)
    {
-     if (bb_conv_weight[(fc_out * 320 / AP_SIZE) + (oc / AP_SIZE)][(AP_SIZE - 1) - (oc % AP_SIZE)])
+     if (bb_conv_weight[(fc_out * B5_OC / AP_SIZE) + (oc / AP_SIZE)][(AP_SIZE - 1) - (oc % AP_SIZE)])
      {
        fc_result += output_tile_oc[oc];
      }
