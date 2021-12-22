@@ -162,5 +162,5 @@ void last_block(Info info, float *input_activation, float *output_activatoin) {
    } // loop for OW
  }//loop for OH
 }
-}
+
 
