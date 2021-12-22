@@ -8,6 +8,13 @@ def reshape(x, shape, permute=False):
         out = np.transpose(out, (0, 3, 1, 2))
     return out
 
+def quantize_weight(data):
+    E = np.mean(np.abs(data))
+    weight = np.tanh(data)
+    weight = weight / 2 / np.max(np.abs(weight)) +0.5
+    weight_q = 2 * np.round(weight) - 1
+    weight_q = weight_q * E
+    return weight_q
 
 def getWindows(input, output_size, kernel_size, padding=0, stride=1, dilate=0):
     working_input = input
@@ -32,24 +39,44 @@ def getWindows(input, output_size, kernel_size, padding=0, stride=1, dilate=0):
     )
 
 class Conv2D:
-    def __init__(self, in_channels, out_channels, weight, kernel_size=3, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, weight, kernel_size=3, stride=1, padding=0, quantize=True):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = kernel_size
         self.stride = stride
         self.padding = padding
         self.weight = weight
+        self.quantize = quantize
 
     def forward(self, x):
+        if self.quantize:
+            weight_q = quantize_weight(self.weight)
+        else:
+            weight_q = self.weight
         n, c, h, w = x.shape
         out_h = (h - self.kernel_size + 2 * self.padding) // self.stride + 1
         out_w = (w - self.kernel_size + 2 * self.padding) // self.stride + 1
 
         windows = getWindows(x, (n, c, out_h, out_w), self.kernel_size, self.padding, self.stride)
 
-        out = np.einsum('bihwkl,oikl->bohw', windows, self.weight)
+        out = np.einsum('bihwkl,oikl->bohw', windows, weight_q)
 
         return out
+
+def func_conv0(input, in_channels, out_channels, weight, kernel_size=3, stride=1, padding=0, nchw=False):
+    n, c, h, w = input.shape
+    out_h = (h - kernel_size + 2 * padding) // stride + 1
+    out_w = (w - kernel_size + 2 * padding) // stride + 1
+
+    windows = getWindows(input, (n, c, out_h, out_w), kernel_size, padding, stride)
+
+    out = np.einsum('bihwkl,oikl->bohw', windows, weight)
+
+    if nchw:
+        out = out.transpose(0,2,3,1)
+
+    return out
+
 
 class Activate:
     def __init__(self):
@@ -57,7 +84,7 @@ class Activate:
 
     def forward(self, x):
         ## Relu ##
-        return np.clip(x, 0, None)
+        return np.round(np.clip(x, 0, None))
 
 class BN:
     def __init__(self, mean, var, gamma, beta):
@@ -79,7 +106,8 @@ class Linear:
         self.weight = weight
         self.bias = bias
     def forward(self, x):
-        return x@self.weight.T + self.bias
+        weight_q = quantize_weight(self.weight)
+        return x@weight_q.T + self.bias
 
 
 class PreActBasicBlockQ_np():
@@ -113,12 +141,13 @@ class PreActBasicBlockQ_np():
                         bn0_bias['param']
                     )
         self.act0 = Activate()
-        if num != 4 :
+        if num != 7 :
             ### B X C X H X W ###
             self.conv0 = Conv2D(
-                                    conv0_kernel['shape'][3], 
+                                    conv0_kernel['shape'][1], 
                                     conv0_kernel['shape'][0], 
-                                    reshape(conv0_kernel['param'], conv0_kernel['shape'], True), 
+                                    #reshape(conv0_kernel['param'], conv0_kernel['shape'], True), 
+                                    conv0_kernel['param'], 
                                     conv0_kernel['shape'][2], 
                                     stride, 
                                     1
@@ -132,9 +161,10 @@ class PreActBasicBlockQ_np():
                         )
             self.act1 = Activate()
         self.conv1 = Conv2D(
-                                conv1_kernel['shape'][3], 
+                                conv1_kernel['shape'][1], 
                                 conv1_kernel['shape'][0], 
-                                reshape(conv1_kernel['param'], conv1_kernel['shape'], True), 
+                                #reshape(conv1_kernel['param'], conv1_kernel['shape'], True), 
+                                conv1_kernel['param'], 
                                 conv1_kernel['shape'][2], 
                                 1, 
                                 1
@@ -145,9 +175,10 @@ class PreActBasicBlockQ_np():
             skip_bn_bias = params[f'layers.{self.num}.skip_bn.bias']
             skip_conv_kernel = params[f'layers.{self.num}.skip_conv.weight']
             self.skip_conv = Conv2D(
-                                    skip_conv_kernel['shape'][3],
+                                    skip_conv_kernel['shape'][1],
                                     skip_conv_kernel['shape'][0],
-                                    reshape(skip_conv_kernel['param'], skip_conv_kernel['shape'] ,True),
+                                    #reshape(skip_conv_kernel['param'], skip_conv_kernel['shape'] ,True),
+                                    skip_conv_kernel['param'],
                                     skip_conv_kernel['shape'][2],
                                     stride,
                                     0
@@ -170,7 +201,7 @@ class PreActBasicBlockQ_np():
         else:
             shortcut = x
 
-        if self.num != 4:
+        if self.num != 7:
             out = self.conv0.forward(out)
             out = self.bn1.forward(out)
             out = self.act1.forward(out)
@@ -191,7 +222,7 @@ class PreActResNet_np():
         ep = self.expand
 
         conv0_kernel = params['conv0.weight']
-        self.conv0 = Conv2D(3, 16 * ep, conv0_kernel['param'], 3, 1, 1)
+        self.conv0 = Conv2D(3, 16 * ep, conv0_kernel['param'], 3, 1, 1, quantize = False)
         
         ## selected layer list ##
         layer_list = [0, 3, 4, 6, 7]
@@ -207,8 +238,8 @@ class PreActResNet_np():
         self.layers = []
 
         for i, (stride, channel) in enumerate(zip(strides, channels)):
-            self.layers.append(block(i, self.bit_list, in_planes, channel, params, stride))
-            #self.layers.append(block(layer_list[i], self.bit_list, in_planes, channel, params, stride))
+            #self.layers.append(block(i, self.bit_list, in_planes, channel, params, stride))
+            self.layers.append(block(layer_list[i], self.bit_list, in_planes, channel, params, stride))
             in_planes = channel
 
         bn_weight = params['bn.bn_dict.1.weight']
@@ -222,21 +253,26 @@ class PreActResNet_np():
 
         fc_weight = params['fc.weight']
         fc_bias = params['fc.bias']
-        self.fc = Linear(reshape(fc_weight['param'], fc_weight['shape']), fc_bias['param'] )
+        #self.fc = Linear(reshape(fc_weight['param'], fc_weight['shape']), fc_bias['param'] )
+        self.fc = Linear(fc_weight['param'], fc_bias['param'] )
         
     def forward(self, x):
         print('start!')
         t = time.time()
         out = self.conv0.forward(x)
         print(f'conv0 complete! elapsed time : {time.time()-t}')
+        np.save('out_data/conv0.npy', out)
         for layer in self.layers:
             t = time.time()
             out = layer.forward(out)
             print(f'layer{layer.num} complete! elapsed time : {time.time()-t}')
+            np.save(f'out_data/layer{layer.num}.npy', out)
         out = self.bn.forward(out)
+        np.save(f'out_data/bn.npy', out)
         #out = out.mean(dim=2).mean(dim=2)
         out = np.average(np.average(out, axis=2), axis=2)
         out = self.fc.forward(out)
+        np.save(f'out_data/fc.npy', out)
         return out
 
 
