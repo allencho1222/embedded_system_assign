@@ -1,13 +1,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <iostream>
+#include <bitset>
 
 #include "run.h"
-#include "basicblock.h"
+#include "conv.h"
+#include "model_param.h"
 
 void run(
   // Input to basic block 0
-  void* input,
+  float* input,
 
   // Paramters for each basic block
   // For each basic block, parameters are listed by:
@@ -23,7 +26,8 @@ void run(
   // Parameters are listed by:
   // bn_alpha_beta, fc_weight, fc_bias
   void* outer_bn,
-  void* outer_fc_weight, void* outer_fc_bias) {
+  void* outer_fc_weight, void* outer_fc_bias,
+  float* out1, float* out2, float* out3, float* out4, float* out5) {
 
   // M_AXI port declaration
   #pragma HLS INTERFACE m_axi port = input depth = 4096 offset = slave bundle = a_port max_read_burst_length = 64
@@ -61,46 +65,48 @@ void run(
 
   // To calculate the maximum array size of BN parameters
   const int BB_BN_ALPHA_BETA_LEN =
-    MAX(bnSize[0].bn + bnSize[1].bn + bnSize[2].bn, \
-        bnSize[3].bn + bnSize[4].bn);
+	MAX(bnSize[0].bn + bnSize[1].bn + bnSize[2].bn, \
+		bnSize[3].bn + bnSize[4].bn) * 2;
   const int BB_SKIP_CONV_BN_ALPHA_BETA_LEN =
-    MAX(bnSize[0].skip_conv_bn + bnSize[1].skip_conv_bn + bnSize[2].skip_conv_bn, \
-        bnSize[3].skip_conv_bn + bnSize[4].skip_conv_bn);
+  	MAX(bnSize[0].skip_conv_bn + bnSize[1].skip_conv_bn + bnSize[2].skip_conv_bn, \
+  		bnSize[3].skip_conv_bn + bnSize[4].skip_conv_bn) * 2;
   const int BB_CONV_BN_ALPHA_BETA_LEN =
-    MAX(bnSize[0].conv_bn + bnSize[1].conv_bn + bnSize[2].conv_bn, \
-        bnSize[3].conv_bn + bnSize[4].conv_bn);
+  	MAX(bnSize[0].conv_bn + bnSize[1].conv_bn + bnSize[2].conv_bn, \
+  		bnSize[3].conv_bn + bnSize[4].conv_bn) * 2;
 
-  // BatchNorm buffers
+  // BatchNorm buffers (ALPHA + BETA)
   float bb_bn_alpha_beta[BB_BN_ALPHA_BETA_LEN];
   float bb_skip_conv_bn_alpha_beta[BB_SKIP_CONV_BN_ALPHA_BETA_LEN];
   float bb_conv_bn_alpha_beta[BB_CONV_BN_ALPHA_BETA_LEN];
 
   // To calculate the maximum array size of conv weight
   const int BB_SKIP_CONV_BN_WEIGHT_LEN =
-    MAX(weightSize[0].skip_conv_bn + weightSize[1].skip_conv_bn +weightSize[2].skip_conv_bn, \
-        weightSize[3].skip_conv_bn + weightSize[4].skip_conv_bn);
+  	MAX(weightSize[0].skip_conv_bn + weightSize[1].skip_conv_bn +weightSize[2].skip_conv_bn, \
+  		weightSize[3].skip_conv_bn + weightSize[4].skip_conv_bn);
   const int BB_CONV_BN_WEIGHT_LEN =
-    MAX(weightSize[0].conv_bn + weightSize[1].conv_bn + weightSize[2].conv_bn, \
-        weightSize[3].conv_bn + weightSize[4].conv_bn);
+  	MAX(weightSize[0].conv_bn + weightSize[1].conv_bn + weightSize[2].conv_bn, \
+  		weightSize[3].conv_bn + weightSize[4].conv_bn);
   const int BB_CONV_WEIGHT_LEN =
-    MAX(weightSize[0].conv + weightSize[1].conv + weightSize[2].conv, \
-        weightSize[3].conv + weightSize[4].conv);
+  	MAX(weightSize[0].conv + weightSize[1].conv + weightSize[2].conv, \
+  		weightSize[3].conv + weightSize[4].conv);
 
   // Conv weight buffers
-  WEIGHT_T bb_skip_conv_bn_weight[BB_SKIP_CONV_BN_WEIGHT_LEN];
-  WEIGHT_T bb_conv_bn_weight[BB_CONV_BN_WEIGHT_LEN];
-  WEIGHT_T bb_conv_weight[BB_CONV_WEIGHT_LEN];
+  WEIGHT_T bb_skip_conv_bn_weight[BB_SKIP_CONV_BN_WEIGHT_LEN / AP_SIZE];
+  WEIGHT_T bb_conv_bn_weight[BB_CONV_BN_WEIGHT_LEN / AP_SIZE];
+  WEIGHT_T bb_conv_weight[BB_CONV_WEIGHT_LEN / AP_SIZE];
+
 
   // Init weights for layer 0, 1, 2
   init_bb(bb_bn_alpha_beta,
-          bb_skip_conv_bn_alpha_beta,
-          bb_conv_bn_alpha_beta,
-          bb_skip_conv_bn_weight,
-          bb_conv_bn_weight,
-          bb_conv_weight,
-          (float*)bb_0_bn, (WEIGHT_T*)bb_0_weight,
+		  bb_skip_conv_bn_alpha_beta,
+		  bb_conv_bn_alpha_beta,
+		  bb_skip_conv_bn_weight,
+		  bb_conv_bn_weight,
+		  bb_conv_weight,
+		  (float*)bb_0_bn, (WEIGHT_T*)bb_0_weight,
           (float*)bb_1_bn, (WEIGHT_T*)bb_1_weight,
-          (float*)bb_2_bn, (WEIGHT_T*)bb_2_weight);
+          (float*)bb_2_bn, (WEIGHT_T*)bb_2_weight,
+		  0);
 
   int bn_offset_0 = 0;
   int bn_offset_1 = 0;
@@ -110,56 +116,196 @@ void run(
   int w_offset_1 = 0;
   int w_offset_2 = 0;
   // Run conv
-  for (int i = 0; i < 3; ++i) {
-    bn_offset_0 += ((i != 0) ? bnSize[i - 1].bn : 0);
-    bn_offset_1 += ((i != 0) ? bnSize[i - 1].skip_conv_bn : 0);
-    bn_offset_2 += ((i != 0) ? bnSize[i - 1].conv_bn : 0);
-    w_offset_0 += ((i != 0) ? weightSize[i - 1].skip_conv_bn : 0);
-    w_offset_1 += ((i != 0) ? weightSize[i - 1].conv_bn: 0);
-    w_offset_2 += ((i != 0) ? weightSize[i - 1].conv : 0);
-    basicblock(bb_bn_alpha_beta + bn_offset_0,
-               bb_skip_conv_bn_alpha_beta + bn_offset_1,
-               bb_conv_bn_alpha_beta + bn_offset_2,
-               bb_skip_conv_bn_weight + w_offset_0,
-               bb_conv_bn_weight + w_offset_1,
-               bb_conv_weight + w_offset_2,
-               bbShapes[i].skip_conv_bn_stride[0], bbShapes[i].skip_conv_bn_stride[1],
-               bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-               bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1],
-               bbShapes[i].skip_conv_bn_padding[0], bbShapes[i].skip_conv_bn_padding[i],
-               bbShapes[i].conv_bn_stride[0], bbShapes[i].conv_bn_stride[1],
-               bbShapes[i].conv_stride[0], bbShapes[i].conv_stride[1]);
+  for (int i = 0; i < 1; ++i) {
+	bn_offset_0 += ((i != 0) ? bnSize[i - 1].bn : 0);
+	bn_offset_1 += ((i != 0) ? bnSize[i - 1].skip_conv_bn : 0);
+	bn_offset_2 += ((i != 0) ? bnSize[i - 1].conv_bn : 0);
+	w_offset_0 += ((i != 0) ? (weightSize[i - 1].skip_conv_bn / AP_SIZE): 0);
+	w_offset_1 += ((i != 0) ? (weightSize[i - 1].conv_bn / AP_SIZE) : 0);
+	w_offset_2 += ((i != 0) ? (weightSize[i - 1].conv / AP_SIZE): 0);
+
+	if (i == 0) {
+		conv((i == 1), // skip conv
+			 bb_conv_bn_weight + w_offset_1,
+			 bb_conv_weight + w_offset_2,
+			 bb_skip_conv_bn_weight + w_offset_0,
+
+			 conv_scale[i],
+
+			 bb_bn_alpha_beta + bn_offset_0,
+			 bb_bn_alpha_beta + bn_offset_0 + bbShapes[i].bn_alpha_shape,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1 + bbShapes[i].skip_conv_bn_alpha_shape,
+			 bb_conv_bn_alpha_beta + bn_offset_2,
+			 bb_conv_bn_alpha_beta + bn_offset_2 + bbShapes[i].conv_bn_alpha_shape,
+
+
+
+			 bbShapes[i].bb_in_shape[0],
+			 bbShapes[i].bb_in_shape[1],
+			 bbShapes[i].bb_in_shape[2],
+
+			 bbShapes[i].conv_bn_io_shape[3], // OH1
+			 bbShapes[i].conv_bn_io_shape[4], // OW1
+			 bbShapes[i].conv_bn_io_shape[5],	//OC1
+
+			 bbShapes[i].conv_io_shape[3], // OH2
+			 bbShapes[i].conv_io_shape[4], // OW2
+			 bbShapes[i].conv_io_shape[5], // OC2
+
+			 bbShapes[i].conv_bn_stride[0], // stride 1
+			 bbShapes[i].conv_stride[0], // stride2
+			 input, out1);
+	} else if (i == 1) {
+		conv((i == 1), // skip conv
+		     bb_conv_bn_weight + w_offset_1,
+			 bb_conv_weight + w_offset_2,
+			 bb_skip_conv_bn_weight + w_offset_0,
+
+			 conv_scale[i],
+
+			 bb_bn_alpha_beta + bn_offset_0,
+			 bb_bn_alpha_beta + bn_offset_0 + bbShapes[i].bn_alpha_shape,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1 + bbShapes[i].skip_conv_bn_alpha_shape,
+			 bb_conv_bn_alpha_beta + bn_offset_2,
+			 bb_conv_bn_alpha_beta + bn_offset_2 + bbShapes[i].conv_bn_alpha_shape,
+
+			 bbShapes[i].bb_in_shape[0],
+			 bbShapes[i].bb_in_shape[1],
+			 bbShapes[i].bb_in_shape[2],
+
+			 bbShapes[i].conv_bn_io_shape[3], // OH1
+			 bbShapes[i].conv_bn_io_shape[4], // OW1
+			 bbShapes[i].conv_bn_io_shape[5],	//OC1
+
+			 bbShapes[i].conv_io_shape[3], // OH2
+			 bbShapes[i].conv_io_shape[4], // OW2
+			 bbShapes[i].conv_io_shape[5], // OC2
+
+			 bbShapes[i].conv_bn_stride[0], // stride 1
+			 bbShapes[i].conv_stride[0],
+			 out1, out2);	// stride 2
+	} else if (i == 2) {
+		conv((i == 1), // skip conv
+			 bb_conv_bn_weight + w_offset_1,
+			 bb_conv_weight + w_offset_2,
+			 bb_skip_conv_bn_weight + w_offset_0,
+
+			 conv_scale[i],
+
+			 bb_bn_alpha_beta + bn_offset_0,
+			 bb_bn_alpha_beta + bn_offset_0 + bbShapes[i].bn_alpha_shape,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1 + bbShapes[i].skip_conv_bn_alpha_shape,
+			 bb_conv_bn_alpha_beta + bn_offset_2,
+			 bb_conv_bn_alpha_beta + bn_offset_2 + bbShapes[i].conv_bn_alpha_shape,
+
+			 bbShapes[i].bb_in_shape[0],
+			 bbShapes[i].bb_in_shape[1],
+			 bbShapes[i].bb_in_shape[2],
+
+			 bbShapes[i].conv_bn_io_shape[3], // OH1
+			 bbShapes[i].conv_bn_io_shape[4], // OW1
+			 bbShapes[i].conv_bn_io_shape[5],	//OC1
+
+			 bbShapes[i].conv_io_shape[3], // OH2
+			 bbShapes[i].conv_io_shape[4], // OW2
+			 bbShapes[i].conv_io_shape[5], // OC2
+
+			 bbShapes[i].conv_bn_stride[0], // stride 1
+			 bbShapes[i].conv_stride[0],
+			 out2, out3);	// stride 2
+	}
   }
   // Init weights for layer 3, 4
   init_bb(bb_bn_alpha_beta,
-          bb_skip_conv_bn_alpha_beta,
-          bb_conv_bn_alpha_beta,
-          bb_skip_conv_bn_weight,
-          bb_conv_bn_weight,
-          bb_conv_weight,
-          (float*)bb_3_bn, (WEIGHT_T*)bb_3_weight,
+		  bb_skip_conv_bn_alpha_beta,
+		  bb_conv_bn_alpha_beta,
+		  bb_skip_conv_bn_weight,
+		  bb_conv_bn_weight,
+		  bb_conv_weight,
+		  (float*)bb_3_bn, (WEIGHT_T*)bb_3_weight,
           (float*)bb_4_bn, (WEIGHT_T*)bb_4_weight,
-          nullptr, nullptr);
+          nullptr, nullptr,
+		  3);
+  bn_offset_0 = 0;
+  bn_offset_1 = 0;
+  bn_offset_2 = 0;
+  w_offset_0 = 0;
+  w_offset_1 = 0;
+  w_offset_2 = 0;
   // Run conv
-  for (int i = 0; i < 2; ++i) {
-    bn_offset_0 += ((i != 0) ? bnSize[i - 1 + 3].bn : 0); bn_offset_1 += ((i != 0) ? bnSize[i - 1 + 3].skip_conv_bn : 0);
-    bn_offset_2 += ((i != 0) ? bnSize[i - 1 + 3].conv_bn : 0);
-    w_offset_0 += ((i != 0) ? weightSize[i - 1 + 3].skip_conv_bn : 0);
-    w_offset_1 += ((i != 0) ? weightSize[i - 1 + 3].conv_bn: 0);
-    w_offset_2 += ((i != 0) ? weightSize[i - 1 + 3].conv : 0);
-    basicblock(bb_bn_alpha_beta + bn_offset_0,
-               bb_skip_conv_bn_alpha_beta + bn_offset_1,
-               bb_conv_bn_alpha_beta + bn_offset_2,
-               bb_skip_conv_bn_weight + w_offset_0,
-               bb_conv_bn_weight + w_offset_1,
-               bb_conv_weight + w_offset_2,
-               bbShapes[i + 3].skip_conv_bn_stride[0], bbShapes[i + 3].skip_conv_bn_stride[1],
-               bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
-               bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1],
-               bbShapes[i + 3].skip_conv_bn_padding[0], bbShapes[i + 3].skip_conv_bn_padding[1],
-               bbShapes[i + 3].conv_bn_stride[0], bbShapes[i + 3].conv_bn_stride[1],
-               bbShapes[i + 3].conv_stride[0], bbShapes[i + 3].conv_stride[1]);
-    }
+  for (int i = 0; i < 1; ++i) {
+  	bn_offset_0 += ((i != 0) ? bnSize[i + 3 - 1].bn : 0);
+  	bn_offset_1 += ((i != 0) ? bnSize[i + 3 - 1].skip_conv_bn : 0);
+  	bn_offset_2 += ((i != 0) ? bnSize[i + 3 - 1].conv_bn : 0);
+  	w_offset_0 += ((i != 0) ? (weightSize[i + 3 - 1].skip_conv_bn / AP_SIZE) : 0);
+  	w_offset_1 += ((i != 0) ? (weightSize[i + 3 - 1].conv_bn / AP_SIZE) : 0);
+  	w_offset_2 += ((i != 0) ? (weightSize[i + 3 - 1].conv / AP_SIZE) : 0);
+
+  	if (i == 0) {
+  		conv((i == 0), // skip conv
+			 bb_conv_bn_weight + w_offset_1,
+			 bb_conv_weight + w_offset_2,
+			 bb_skip_conv_bn_weight + w_offset_0,
+
+			 conv_scale[i + 3],
+
+			 bb_bn_alpha_beta + bn_offset_0,
+			 bb_bn_alpha_beta + bn_offset_0 + bbShapes[i + 3].bn_alpha_shape,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1,
+			 bb_skip_conv_bn_alpha_beta + bn_offset_1 + bbShapes[i + 3].skip_conv_bn_alpha_shape,
+			 bb_conv_bn_alpha_beta + bn_offset_2,
+			 bb_conv_bn_alpha_beta + bn_offset_2 + bbShapes[i + 3].conv_bn_alpha_shape,
+
+			 bbShapes[i + 3].bb_in_shape[0],
+			 bbShapes[i + 3].bb_in_shape[1],
+			 bbShapes[i + 3].bb_in_shape[2],
+
+			 bbShapes[i + 3].conv_bn_io_shape[3], // OH1
+			 bbShapes[i + 3].conv_bn_io_shape[4], // OW1
+			 bbShapes[i + 3].conv_bn_io_shape[5],	//OC1
+
+			 bbShapes[i + 3].conv_io_shape[3], // OH2
+			 bbShapes[i + 3].conv_io_shape[4], // OW2
+			 bbShapes[i + 3].conv_io_shape[5], // OC2
+
+			 bbShapes[i + 3].conv_bn_stride[0], // stride 1
+			 bbShapes[i + 3].conv_stride[0],
+			 out3, out4);	// stride 2
+  	} else {
+//		last_block((i == 0), // skip conv
+//	  			 bb_skip_conv_bn_weight + w_offset_0,
+//				 bb_conv_bn_weight + w_offset_1,
+//				 bb_conv_weight + w_offset_2,
+//
+//				 bb_bn_alpha_beta + bn_offset_0,
+//				 bb_bn_alpha_beta + bn_offset_0 + bbShapes[i + 3].bn_alpha_shape,
+//				 bb_skip_conv_bn_alpha_beta + bn_offset_1,
+//				 bb_skip_conv_bn_alpha_beta + bn_offset_1 + bbShapes[i + 3].skip_conv_bn_alpha_shape,
+//				 bb_conv_bn_alpha_beta + bn_offset_2,
+//				 bb_conv_bn_alpha_beta + bn_offset_2 + bbShapes[i + 3].conv_bn_alpha_shape,
+//
+//				 conv_scale[i + 3],
+//
+//				 bbShapes[i + 3].bb_in_shape[0],
+//				 bbShapes[i + 3].bb_in_shape[1],
+//				 bbShapes[i + 3].bb_in_shape[2],
+//
+//				 bbShapes[i + 3].conv_bn_io_shape[3], // OH1
+//				 bbShapes[i + 3].conv_bn_io_shape[4], // OW1
+//				 bbShapes[i + 3].conv_bn_io_shape[5],	//OC1
+//
+//				 bbShapes[i + 3].conv_io_shape[3], // OH2
+//				 bbShapes[i + 3].conv_io_shape[4], // OW2
+//				 bbShapes[i + 3].conv_io_shape[5], // OC2
+//
+//				 bbShapes[i + 3].conv_bn_stride[0], // stride 1
+//				 bbShapes[i + 3].conv_stride[0],
+//				 out3, out4);	// stride 2
+  	}
+  }
   // TODO: need to implement outer bn and fc
   //init_outer(outer_bn, outer_fc_weight, outer_fc_bias);
 }
@@ -173,7 +319,8 @@ void init_bb(
   WEIGHT_T* bb_conv_weight,
   float* bb_0_bn, WEIGHT_T* bb_0_weight,
   float* bb_1_bn, WEIGHT_T* bb_1_weight,
-  float* bb_2_bn, WEIGHT_T* bb_2_weight) {
+  float* bb_2_bn, WEIGHT_T* bb_2_weight,
+  int start) {
 
   int src_offset = 0;
 
@@ -185,47 +332,48 @@ void init_bb(
   int w_dest_offset_1 = 0;
   int w_dest_offset_2 = 0;
 
-  // Layer 0
+   // Layer 0
    src_offset = 0;
    bn_dest_offset_0 += 0;
-   memcpy(bb_bn_alpha_beta + bn_dest_offset_0, bb_0_bn + src_offset, sizeof(float) * bnSize[0].bn);
-   src_offset += bnSize[0].bn;
+   memcpy(bb_bn_alpha_beta + bn_dest_offset_0, bb_0_bn + src_offset, sizeof(float) * bnSize[start + 0].bn);
+   src_offset += bnSize[start + 0].bn;
    bn_dest_offset_1 += 0;
-   memcpy(bb_skip_conv_bn_alpha_beta + bn_dest_offset_1, bb_0_bn + src_offset, sizeof(float) * bnSize[0].skip_conv_bn);
-   src_offset += bnSize[0].skip_conv_bn;
+   memcpy(bb_skip_conv_bn_alpha_beta + bn_dest_offset_1, bb_0_bn + src_offset, sizeof(float) * bnSize[start + 0].skip_conv_bn);
+   src_offset += bnSize[start + 0].skip_conv_bn;
    bn_dest_offset_2 += 0;
-   memcpy(bb_conv_bn_alpha_beta + bn_dest_offset_2, bb_0_bn + src_offset, sizeof(float) * bnSize[0].conv_bn);
+   memcpy(bb_conv_bn_alpha_beta + bn_dest_offset_2, bb_0_bn + src_offset, sizeof(float) * bnSize[start + 0].conv_bn);
 
    src_offset = 0;
    w_dest_offset_0 += 0;
-   memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_0_weight + src_offset, sizeof(WEIGHT_T) * weightSize[0].skip_conv_bn);
-   src_offset += weightSize[0].skip_conv_bn;
+   memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_0_weight + src_offset, weightSize[start + 0].skip_conv_bn / 8);
+   src_offset += (weightSize[start + 0].skip_conv_bn / AP_SIZE);
    w_dest_offset_1 += 0;
-   memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_0_weight + src_offset, sizeof(WEIGHT_T) * weightSize[0].conv_bn);
-   src_offset += weightSize[0].conv_bn;
+   memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_0_weight + src_offset, weightSize[start + 0].conv_bn / 8);
+
+   src_offset += (weightSize[start + 0].conv_bn / AP_SIZE);
    w_dest_offset_2 += 0;
-   memcpy(bb_conv_weight + w_dest_offset_2, bb_0_weight + src_offset, sizeof(WEIGHT_T) * weightSize[0].conv);
+   memcpy(bb_conv_weight + w_dest_offset_2, bb_0_weight + src_offset, weightSize[start + 0].conv / 8);
 
    // Layer 1
    src_offset = 0;
-   bn_dest_offset_0 += bnSize[0].bn;
-   memcpy(bb_bn_alpha_beta + bn_dest_offset_0, bb_1_bn + src_offset, sizeof(float) * bnSize[1].bn);
-   src_offset += bnSize[1].bn;
+   bn_dest_offset_0 += bnSize[start + 0].bn;
+   memcpy(bb_bn_alpha_beta + bn_dest_offset_0, bb_1_bn + src_offset, sizeof(float) * bnSize[start + 1].bn);
+   src_offset += bnSize[start + 1].bn;
    bn_dest_offset_1 += bnSize[0].skip_conv_bn;
-   memcpy(bb_skip_conv_bn_alpha_beta + bn_dest_offset_1, bb_1_bn + src_offset, sizeof(float) * bnSize[1].skip_conv_bn);
-   src_offset += bnSize[1].skip_conv_bn;
-   bn_dest_offset_2 += bnSize[0].conv_bn;
-   memcpy(bb_conv_bn_alpha_beta + bn_dest_offset_2, bb_1_bn + src_offset, sizeof(float) * bnSize[1].conv_bn);
+   memcpy(bb_skip_conv_bn_alpha_beta + bn_dest_offset_1, bb_1_bn + src_offset, sizeof(float) * bnSize[start + 1].skip_conv_bn);
+   src_offset += bnSize[start + 1].skip_conv_bn;
+   bn_dest_offset_2 += bnSize[start + 0].conv_bn;
+   memcpy(bb_conv_bn_alpha_beta + bn_dest_offset_2, bb_1_bn + src_offset, sizeof(float) * bnSize[start + 1].conv_bn);
 
    src_offset = 0;
-   w_dest_offset_0 += weightSize[0].skip_conv_bn;
-   memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_1_weight + src_offset, sizeof(WEIGHT_T) * weightSize[1].skip_conv_bn);
-   src_offset += weightSize[1].skip_conv_bn;
-   w_dest_offset_1 += weightSize[0].conv_bn;
-   memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_1_weight + src_offset, sizeof(WEIGHT_T) * weightSize[1].conv_bn);
-   src_offset += weightSize[1].conv_bn;
-   w_dest_offset_2 += weightSize[0].conv;
-   memcpy(bb_conv_weight + w_dest_offset_2, bb_1_weight + src_offset, sizeof(WEIGHT_T) * weightSize[1].conv);
+   w_dest_offset_0 += (weightSize[start + 0].skip_conv_bn / AP_SIZE);
+   memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_1_weight + src_offset, weightSize[start + 1].skip_conv_bn / 8);
+   src_offset += (weightSize[start + 1].skip_conv_bn / AP_SIZE);
+   w_dest_offset_1 += (weightSize[start + 0].conv_bn / AP_SIZE);
+   memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_1_weight + src_offset, weightSize[start + 1].conv_bn / 8);
+   src_offset += (weightSize[start + 1].conv_bn / AP_SIZE);
+   w_dest_offset_2 += (weightSize[start + 0].conv / AP_SIZE);
+   memcpy(bb_conv_weight + w_dest_offset_2, bb_1_weight + src_offset, weightSize[start + 1].conv / 8);
 
    if (bb_2_bn != nullptr && bb_2_weight != nullptr) {
      // Layer 2
@@ -240,14 +388,14 @@ void init_bb(
      memcpy(bb_conv_bn_alpha_beta + bn_dest_offset_2, bb_2_bn + src_offset, sizeof(float) * bnSize[2].conv_bn);
 
      src_offset = 0;
-     w_dest_offset_0 += weightSize[1].skip_conv_bn;
-     memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_2_weight + src_offset, sizeof(WEIGHT_T) * weightSize[2].skip_conv_bn);
-     src_offset += weightSize[2].skip_conv_bn;
-     w_dest_offset_1 += weightSize[1].conv_bn;
-     memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_2_weight + src_offset, sizeof(WEIGHT_T) * weightSize[2].conv_bn);
-     src_offset += weightSize[2].conv_bn;
-     w_dest_offset_2 += weightSize[1].conv;
-     memcpy(bb_conv_weight + w_dest_offset_2, bb_2_weight + src_offset, sizeof(WEIGHT_T) * weightSize[2].conv);
+     w_dest_offset_0 += (weightSize[1].skip_conv_bn / AP_SIZE);
+     memcpy(bb_skip_conv_bn_weight + w_dest_offset_0, bb_2_weight + src_offset, weightSize[2].skip_conv_bn / 8);
+     src_offset += (weightSize[2].skip_conv_bn/ AP_SIZE);
+     w_dest_offset_1 += (weightSize[1].conv_bn / AP_SIZE);
+     memcpy(bb_conv_bn_weight + w_dest_offset_1, bb_2_weight + src_offset, weightSize[2].conv_bn / 8);
+     src_offset += (weightSize[2].conv_bn / AP_SIZE);
+     w_dest_offset_2 += (weightSize[1].conv / AP_SIZE);
+     memcpy(bb_conv_weight + w_dest_offset_2, bb_2_weight + src_offset, weightSize[2].conv / 8);
    }
 }
 

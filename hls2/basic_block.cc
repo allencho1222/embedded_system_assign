@@ -356,7 +356,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B3_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B3_OC1 * B3_IC / AP_SIZE) 
+                if (weight_buff[(kh * OTHER_KERNEL_SIZE * B3_OC1 * B3_IC / AP_SIZE) 
                   + (kw * B3_OC1 * B3_IC / AP_SIZE) + (oc * B3_IC / AP_SIZE) 
                   + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
@@ -400,7 +400,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B3_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B3_OC2 * B3_OC1 / AP_SIZE) 
+                if (weight_buff[(kh * OTHER_KERNEL_SIZE * B3_OC2 * B3_OC1 / AP_SIZE) 
                   + (kw * B3_OC2 * B3_OC1 / AP_SIZE) + (oc * B3_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B3_OW1 * B3_OC1 + iw * B3_OC1 + ic];
@@ -471,7 +471,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_IC; ic++)
               {
-                if (bb_conv_bn_weight[(kh * OTHER_KERNEL_SIZE * B4_OC1 * B4_IC / AP_SIZE) + (kw * B4_OC1 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (weight_buff[(kh * OTHER_KERNEL_SIZE * B4_OC1 * B4_IC / AP_SIZE) + (kw * B4_OC1 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B4_IW * B4_IC + iw * B4_IC + ic];
                 }
@@ -509,7 +509,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_IC; ic++)
               {
-                if (bb_skip_conv_bn_weight[(kh * SKIP_CONV_BN_KERNEL_SIZE * B4_OC2 * B4_IC / AP_SIZE) + (kw * B4_OC2 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (weight_buff[(kh * SKIP_CONV_BN_KERNEL_SIZE * B4_OC2 * B4_IC / AP_SIZE) + (kw * B4_OC2 * B4_IC / AP_SIZE) + (oc * B4_IC / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_activation[ih * B4_IW * B4_IC + iw * B4_IC + ic];
                 }
@@ -550,7 +550,7 @@ bn_relu0:
             {
               for (int ic = 0; ic < B4_OC1; ic++)
               {
-                if (bb_conv_weight[(kh * OTHER_KERNEL_SIZE * B4_OC2 * B4_OC1 / AP_SIZE) + (kw * B4_OC2 * B4_OC1 / AP_SIZE) + (oc * B4_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
+                if (weight_buff[(kh * OTHER_KERNEL_SIZE * B4_OC2 * B4_OC1 / AP_SIZE) + (kw * B4_OC2 * B4_OC1 / AP_SIZE) + (oc * B4_OC1 / AP_SIZE) + (ic / AP_SIZE)][(AP_SIZE - 1) - (ic % AP_SIZE)])
                 {
                   output_tile_oc[oc] += temp_output1_acgivation[ih * B4_OW1 * B4_OC1 + iw * B4_OC1 + ic];
                 }
